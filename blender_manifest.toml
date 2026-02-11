@@ -2,14 +2,14 @@ schema_version = "1.0.0"
 id = "send_to_library"
 version = "1.0.0"
 name = "Send to Library"
-tagline = "Send datablocks (like Node Groups) to an external asset library blend file."
-maintainer = "jmatthews"
+tagline = "Send datablocks to an external asset library blend file"
+maintainer = "Johnny Matthews"
 type = "add-on"
 blender_version_min = "4.2.0"
 license = [
   "SPDX:GPL-3.0-or-later",
 ]
-#website = ""
+#website = "https://github.com/johnnygizmo/sendtolibrary"
 
 [permissions]
 #network = { optional = true }
