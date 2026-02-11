@@ -15,6 +15,11 @@ def get_args():
     parser.add_argument("--target_file", required=True, help="Path to the target library .blend file")
     parser.add_argument("--datablock_type", required=True, help="Type of datablock (e.g., NodeTree, Material)")
     parser.add_argument("--datablock_name", required=True, help="Name of the datablock")
+    parser.add_argument("--new_name", required=True, help="New name for the asset")
+    parser.add_argument("--description", default="", help="Asset description")
+    parser.add_argument("--author", default="", help="Asset author")
+    parser.add_argument("--copyright", default="", help="Asset copyright")
+    parser.add_argument("--license", default="", help="Asset license")
     
     return parser.parse_args(argv)
 
@@ -78,7 +83,30 @@ def main():
         
     if asset:
         print(f"Marking '{asset.name}' as asset...")
+        
+        # Rename the asset if new_name is different
+        if args.new_name and args.new_name != asset.name:
+            print(f"Renaming asset from '{asset.name}' to '{args.new_name}'")
+            asset.name = args.new_name
+        
+        # Mark as asset
         asset.asset_mark()
+        
+        # Set metadata fields
+        if args.description:
+            asset.asset_data.description = args.description
+            print(f"Set description: {args.description}")
+        if args.author:
+            asset.asset_data.author = args.author
+            print(f"Set author: {args.author}")
+        if args.copyright:
+            asset.asset_data.copyright = args.copyright
+            print(f"Set copyright: {args.copyright}")
+        if args.license:
+            asset.asset_data.license = args.license
+            print(f"Set license: {args.license}")
+        
+        # Generate preview
         # asset.asset_generate_preview()
         try:
             with bpy.context.temp_override(id=asset, selected_ids=[asset]):

@@ -25,12 +25,54 @@ class NODE_OT_send_to_library(bpy.types.Operator, ExportHelper):
 
     datablock_name: StringProperty(name="Datablock Name", options={'HIDDEN'})
     datablock_type: StringProperty(name="Datablock Type", options={'HIDDEN'})
+    
+    # Asset metadata fields
+    new_name: StringProperty(
+        name="New Name",
+        description="Name for the asset in the library",
+        default=""
+    )
+    description: StringProperty(
+        name="Description",
+        description="Asset description",
+        default=""
+    )
+    author: StringProperty(
+        name="Author",
+        description="Asset author",
+        default=""
+    )
+    copyright: StringProperty(
+        name="Copyright",
+        description="Asset copyright information",
+        default=""
+    )
+    license: StringProperty(
+        name="License",
+        description="Asset license",
+        default=""
+    )
 
     def invoke(self, context, event):
+        # Pre-fill new_name with the original datablock name
+        if not self.new_name:
+            self.new_name = self.datablock_name
+        
         # We override invoke to ensure the file selector opens
         # The 'filepath' should have been pre-set by the caller (select_library)
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
+    
+    def draw(self, context):
+        """Draw the file dialog UI with metadata fields"""
+        layout = self.layout
+        
+        layout.prop(self, "new_name")
+        layout.separator()
+        layout.prop(self, "description")
+        layout.prop(self, "author")
+        layout.prop(self, "copyright")
+        layout.prop(self, "license")
 
     def execute(self, context):
         if not self.filepath:
@@ -62,7 +104,12 @@ class NODE_OT_send_to_library(bpy.types.Operator, ExportHelper):
             "--source_file", source_file,
             "--target_file", self.filepath,
             "--datablock_type", self.datablock_type,
-            "--datablock_name", self.datablock_name
+            "--datablock_name", self.datablock_name,
+            "--new_name", self.new_name,
+            "--description", self.description,
+            "--author", self.author,
+            "--copyright", self.copyright,
+            "--license", self.license
         ]
         
         print(f"Executing: {' '.join(cmd)}")
