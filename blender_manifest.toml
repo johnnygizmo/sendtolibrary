@@ -1,11 +1,11 @@
 schema_version = "1.0.0"
 id = "send_to_library"
-version = "1.0.0"
+version = "1.0.1"
 name = "Send to Library"
 tagline = "Send datablocks to an external asset library blend file"
 maintainer = "Johnny Matthews"
 type = "add-on"
-blender_version_min = "4.2.0"
+blender_version_min = "5.0.1"
 license = [
   "SPDX:GPL-3.0-or-later",
 ]

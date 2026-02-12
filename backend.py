@@ -45,70 +45,60 @@ def main():
         bpy.ops.wm.read_factory_settings(use_empty=True)
 
     # 2. Append Data
-    # The 'directory' parameter in append expects: /path/to/file.blend/NodeTree/
-    # We construct the full path to the internal collection
+    # Map datablock types to their collections
+    datablock_collections = {
+        "NodeTree": bpy.data.node_groups,
+        "Material": bpy.data.materials,
+        "Object": bpy.data.objects,
+    }
+    
+    collection = datablock_collections.get(args.datablock_type)
+    if collection is None:
+        print(f"Error: Unsupported datablock type: {args.datablock_type}")
+        sys.exit(1)
+    
+    # Track existing datablocks before append
+    existing_datablocks = set(collection.keys())
     
     # Ensure source file path is absolute
     source_file = os.path.abspath(args.source_file)
     
     # Construct directory path inside the blend file
-    # Note: Append works by specifying 'filepath' (full path to ID) and 'directory' (path to ID's container)
-    # directory format: c:\path\source.blend\NodeTree\
-    
-    # Windows path safety
     source_dir = os.path.join(source_file, args.datablock_type)
 
-    
     try:
         bpy.ops.wm.append(
             filepath=os.path.join(source_dir, args.datablock_name),
             directory=source_dir,
-            filename=args.datablock_name
+            filename=args.datablock_name,
+            autoselect=True
         )
     except Exception as e:
         print(f"Failed to append: {e}")
         sys.exit(1)
 
-    # 3. Mark as Asset
-    # Find the object we just appended
-    asset = None
+    # Find the newly appended datablock
+    new_datablocks = set(collection.keys()) - existing_datablocks
     
-    # Resolving the datablock collection based on type
-    # This mapping might need expansion for other types
-    if args.datablock_type == "NodeTree":
-        asset = bpy.data.node_groups.get(args.datablock_name)
-    elif args.datablock_type == "Material":
-        asset = bpy.data.materials.get(args.datablock_name)
-    elif args.datablock_type == "Object":
-        asset = bpy.data.objects.get(args.datablock_name)
-    # Add other types here as needed
-        
+    if not new_datablocks:
+        print(f"Error: No new datablock was appended. '{args.datablock_name}' may already exist in target.")
+        sys.exit(1)
+    
+    # Get the actual name that was assigned (should only be one new datablock)
+    actual_name = list(new_datablocks)[0]
+    asset = collection[actual_name]
+    
+    if actual_name != args.datablock_name:
+        print(f"Note: Datablock was renamed from '{args.datablock_name}' to '{actual_name}' due to name collision")
+
+    # 3. Mark as Asset
     if asset:
         if args.append_only:
              print(f"Appended '{asset.name}'. Skipping asset marking (Append Only mode).")
              
              # Make Single User (specifically for Objects)
              if args.datablock_type == "Object":
-                 # Ensure the object and its data are single user
-                 # This mimics the "Make Single User" -> "Object & Data" checks
                  try:
-                    # We can use the make_single_user operator or do it manually via ID user count
-                    # But since we are backend, we might not have context.
-                    # Manual approach is safer for background.
-                    
-                    # 1. Make the object itself single user (it technically is, since we just appended it, 
-                    # unless it was already there and we re-used it? Append usually makes a new copy if not linked)
-                    
-                    # However, "Make Single User" primarily affects shared data blocks (Mesh, Material, etc)
-                    # For a newly appended object, it might share mesh data if that mesh was already in the file.
-                    
-                    # Let's use the low-level function provided by the ID
-                    # make_local() is about library linking. 
-                    # user_clear() removes users.
-                    
-                    # The user likely wants existing data to be unique to this object.
-                    # Equivalent to: Object > Relations > Make Single User > Object & Data
-                    
                     if asset.data and asset.data.users > 1:
                         print(f"Making data '{asset.data.name}' single user...")
                         asset.data = asset.data.copy()
@@ -142,14 +132,13 @@ def main():
                 print(f"Set license: {args.license}")
             
             # Generate preview
-            # asset.asset_generate_preview()
             try:
-                with bpy.context.temp_override(id=asset, selected_ids=[asset]):
-                        bpy.ops.ed.lib_id_generate_preview()
+                asset.asset_generate_preview()
+                print(f"Preview generated for '{asset.name}'")
             except Exception as e:
                 print(f"Preview generation warning: {e}")
     else:
-        print(f"Error: Could not find appended asset '{args.datablock_name}' in target file.")
+        print(f"Error: Could not find appended asset.")
         sys.exit(1)
 
     # 4. Save Target
