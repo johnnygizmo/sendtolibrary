@@ -20,6 +20,7 @@ def get_args():
     parser.add_argument("--author", default="", help="Asset author")
     parser.add_argument("--copyright", default="", help="Asset copyright")
     parser.add_argument("--license", default="", help="Asset license")
+    parser.add_argument("--append_only", action="store_true", help="If true, append only and do not mark as asset")
     
     return parser.parse_args(argv)
 
@@ -56,6 +57,7 @@ def main():
     
     # Windows path safety
     source_dir = os.path.join(source_file, args.datablock_type)
+
     
     try:
         bpy.ops.wm.append(
@@ -82,37 +84,70 @@ def main():
     # Add other types here as needed
         
     if asset:
-        print(f"Marking '{asset.name}' as asset...")
-        
-        # Rename the asset if new_name is different
-        if args.new_name and args.new_name != asset.name:
-            print(f"Renaming asset from '{asset.name}' to '{args.new_name}'")
-            asset.name = args.new_name
-        
-        # Mark as asset
-        asset.asset_mark()
-        
-        # Set metadata fields
-        if args.description:
-            asset.asset_data.description = args.description
-            print(f"Set description: {args.description}")
-        if args.author:
-            asset.asset_data.author = args.author
-            print(f"Set author: {args.author}")
-        if args.copyright:
-            asset.asset_data.copyright = args.copyright
-            print(f"Set copyright: {args.copyright}")
-        if args.license:
-            asset.asset_data.license = args.license
-            print(f"Set license: {args.license}")
-        
-        # Generate preview
-        # asset.asset_generate_preview()
-        try:
-            with bpy.context.temp_override(id=asset, selected_ids=[asset]):
-                 bpy.ops.ed.lib_id_generate_preview()
-        except Exception as e:
-            print(f"Preview generation warning: {e}")
+        if args.append_only:
+             print(f"Appended '{asset.name}'. Skipping asset marking (Append Only mode).")
+             
+             # Make Single User (specifically for Objects)
+             if args.datablock_type == "Object":
+                 # Ensure the object and its data are single user
+                 # This mimics the "Make Single User" -> "Object & Data" checks
+                 try:
+                    # We can use the make_single_user operator or do it manually via ID user count
+                    # But since we are backend, we might not have context.
+                    # Manual approach is safer for background.
+                    
+                    # 1. Make the object itself single user (it technically is, since we just appended it, 
+                    # unless it was already there and we re-used it? Append usually makes a new copy if not linked)
+                    
+                    # However, "Make Single User" primarily affects shared data blocks (Mesh, Material, etc)
+                    # For a newly appended object, it might share mesh data if that mesh was already in the file.
+                    
+                    # Let's use the low-level function provided by the ID
+                    # make_local() is about library linking. 
+                    # user_clear() removes users.
+                    
+                    # The user likely wants existing data to be unique to this object.
+                    # Equivalent to: Object > Relations > Make Single User > Object & Data
+                    
+                    if asset.data and asset.data.users > 1:
+                        print(f"Making data '{asset.data.name}' single user...")
+                        asset.data = asset.data.copy()
+                        
+                 except Exception as e:
+                     print(f"Error making single user: {e}")
+
+        else:
+            print(f"Marking '{asset.name}' as asset...")
+            
+            # Rename the asset if new_name is different
+            if args.new_name and args.new_name != asset.name:
+                print(f"Renaming asset from '{asset.name}' to '{args.new_name}'")
+                asset.name = args.new_name
+            
+            # Mark as asset
+            asset.asset_mark()
+            
+            # Set metadata fields
+            if args.description:
+                asset.asset_data.description = args.description
+                print(f"Set description: {args.description}")
+            if args.author:
+                asset.asset_data.author = args.author
+                print(f"Set author: {args.author}")
+            if args.copyright:
+                asset.asset_data.copyright = args.copyright
+                print(f"Set copyright: {args.copyright}")
+            if args.license:
+                asset.asset_data.license = args.license
+                print(f"Set license: {args.license}")
+            
+            # Generate preview
+            # asset.asset_generate_preview()
+            try:
+                with bpy.context.temp_override(id=asset, selected_ids=[asset]):
+                        bpy.ops.ed.lib_id_generate_preview()
+            except Exception as e:
+                print(f"Preview generation warning: {e}")
     else:
         print(f"Error: Could not find appended asset '{args.datablock_name}' in target file.")
         sys.exit(1)

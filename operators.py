@@ -2,7 +2,7 @@ import bpy
 import os
 import subprocess
 import shlex
-from bpy.props import StringProperty, EnumProperty
+from bpy.props import StringProperty, EnumProperty, BoolProperty
 from bpy_extras.io_utils import ExportHelper
 
 def get_backend_script_path():
@@ -53,6 +53,18 @@ class NODE_OT_send_to_library(bpy.types.Operator, ExportHelper):
         default=""
     )
 
+    append_only: BoolProperty(
+        name="Append Only (No Asset)",
+        description="Just append the object/node without marking it as an asset. Also ensures it's a single user.",
+        default=False
+    )
+
+    save_current: BoolProperty(
+        name="Save Current File",
+        description="Save the current file before trying to send",
+        default=False
+    )
+
     def invoke(self, context, event):
         # Pre-fill new_name with the original datablock name
         if not self.new_name:
@@ -73,6 +85,10 @@ class NODE_OT_send_to_library(bpy.types.Operator, ExportHelper):
         layout.prop(self, "author")
         layout.prop(self, "copyright")
         layout.prop(self, "license")
+        
+        layout.separator()
+        layout.prop(self, "append_only")
+        layout.prop(self, "save_current")
 
     def execute(self, context):
         if not self.filepath:
@@ -86,8 +102,12 @@ class NODE_OT_send_to_library(bpy.types.Operator, ExportHelper):
             return {'CANCELLED'}
         
         if bpy.data.is_dirty:
-            self.report({'ERROR'}, "Please save your current file first. The background process needs the latest changes on disk.")
-            return {'CANCELLED'}
+            if self.save_current:
+                #save the file
+                bpy.ops.wm.save_mainfile()
+            else:
+                self.report({'ERROR'}, "Please save your current file first. The background process needs the latest changes on disk.")
+                return {'CANCELLED'}
 
         # 2. Prepare Command
         blender_bin = bpy.app.binary_path
@@ -111,6 +131,9 @@ class NODE_OT_send_to_library(bpy.types.Operator, ExportHelper):
             "--copyright", self.copyright,
             "--license", self.license
         ]
+
+        if self.append_only:
+             cmd.append("--append_only")
         
         print(f"Executing: {' '.join(cmd)}")
         self.report({'INFO'}, f"Sending {self.datablock_name} to library...")
