@@ -13,7 +13,7 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--source_file", required=True, help="Path to the source .blend file")
     parser.add_argument("--target_file", required=True, help="Path to the target library .blend file")
-    parser.add_argument("--datablock_type", required=True, help="Type of datablock (e.g., NodeTree, Material)")
+    parser.add_argument("--datablock_type", required=True, help="Type of datablock (e.g., NodeTree, Material, Object, Collection)")
     parser.add_argument("--datablock_name", required=True, help="Name of the datablock")
     parser.add_argument("--new_name", required=True, help="New name for the asset")
     parser.add_argument("--description", default="", help="Asset description")
@@ -50,6 +50,7 @@ def main():
         "NodeTree": bpy.data.node_groups,
         "Material": bpy.data.materials,
         "Object": bpy.data.objects,
+        "Collection": bpy.data.collections,
     }
     
     collection = datablock_collections.get(args.datablock_type)
@@ -96,7 +97,7 @@ def main():
         if args.append_only:
              print(f"Appended '{asset.name}'. Skipping asset marking (Append Only mode).")
              
-             # Make Single User (specifically for Objects)
+             # Make Single User (specifically for Objects, not Collections)
              if args.datablock_type == "Object":
                  try:
                     if asset.data and asset.data.users > 1:

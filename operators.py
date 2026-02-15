@@ -281,3 +281,75 @@ def draw_object_context_menu(self, context):
     if obj:
         layout.separator()
         layout.menu("OBJECT_MT_send_to_library", text="Current Object => Asset Library", icon='ASSET_MANAGER')
+
+class OUTLINER_MT_send_nodetree_to_library(bpy.types.Menu):
+    bl_label = "Node Tree => Asset Library"
+    bl_idname = "OUTLINER_MT_send_nodetree_to_library"
+
+    def draw(self, context):
+        node_tree = getattr(context, 'id', None)
+        if isinstance(node_tree, bpy.types.NodeTree):
+            draw_library_items(self.layout, context, node_tree.name, "NodeTree")
+        else:
+            self.layout.label(text="No Node Tree Active")
+
+class OUTLINER_MT_send_material_to_library(bpy.types.Menu):
+    bl_label = "Material => Asset Library"
+    bl_idname = "OUTLINER_MT_send_material_to_library"
+
+    def draw(self, context):
+        material = getattr(context, 'id', None)
+        if isinstance(material, bpy.types.Material):
+            draw_library_items(self.layout, context, material.name, "Material")
+        else:
+            self.layout.label(text="No Material Active")
+
+class OUTLINER_MT_send_object_to_library(bpy.types.Menu):
+    bl_label = "Object => Asset Library"
+    bl_idname = "OUTLINER_MT_send_object_to_library"
+
+    def draw(self, context):
+        obj = getattr(context, 'id', None)
+        if isinstance(obj, bpy.types.Object):
+            draw_library_items(self.layout, context, obj.name, "Object")
+        else:
+            self.layout.label(text="No Object Active")
+
+class OUTLINER_MT_send_collection_to_library(bpy.types.Menu):
+    bl_label = "Collection => Asset Library"
+    bl_idname = "OUTLINER_MT_send_collection_to_library"
+
+    def draw(self, context):
+        collection = getattr(context, 'id', None)
+        if isinstance(collection, bpy.types.Collection):
+            draw_library_items(self.layout, context, collection.name, "Collection")
+        else:
+            self.layout.label(text="No Collection Active")
+
+def draw_outliner_context_menu(self, context):
+    """Draw outliner context menu with send to library options"""
+    layout = self.layout
+    
+    # Try different ways to get the outliner element
+    element = getattr(context, 'id', None)
+    
+    if element is None:
+        return
+    
+    layout.separator()
+    
+    # Node Trees (Geometry Nodes, Shader Nodes, etc.)
+    if isinstance(element, bpy.types.NodeTree):
+        layout.menu("OUTLINER_MT_send_nodetree_to_library", text="Node Tree => Asset Library", icon='ASSET_MANAGER')
+    
+    # Materials
+    elif isinstance(element, bpy.types.Material):
+        layout.menu("OUTLINER_MT_send_material_to_library", text="Material => Asset Library", icon='ASSET_MANAGER')
+    
+    # Objects
+    elif isinstance(element, bpy.types.Object):
+        layout.menu("OUTLINER_MT_send_object_to_library", text="Object => Asset Library", icon='ASSET_MANAGER')
+    
+    # Collections
+    elif isinstance(element, bpy.types.Collection):
+        layout.menu("OUTLINER_MT_send_collection_to_library", text="Collection => Asset Library", icon='ASSET_MANAGER')

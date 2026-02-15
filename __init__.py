@@ -28,12 +28,19 @@ def material_menu_func(self, context):
 def object_menu_func(self, context):
     operators.draw_object_context_menu(self, context)
 
+def outliner_menu_func(self, context):
+    operators.draw_outliner_context_menu(self, context)
+
 classes = (
     operators.NODE_OT_send_to_library,
     operators.NODE_OT_select_library_item,
     operators.NODE_MT_send_node_to_library,
     operators.NODE_MT_send_material_to_library,
     operators.OBJECT_MT_send_to_library,
+    operators.OUTLINER_MT_send_nodetree_to_library,
+    operators.OUTLINER_MT_send_material_to_library,
+    operators.OUTLINER_MT_send_object_to_library,
+    operators.OUTLINER_MT_send_collection_to_library,
 )
 
 def register():
@@ -45,11 +52,35 @@ def register():
     bpy.types.MATERIAL_MT_context_menu.append(material_menu_func)
     # Add to Object context menu
     bpy.types.VIEW3D_MT_object_context_menu.append(object_menu_func)
+    
+    # Find and register outliner context menu
+    outliner_menus = [name for name in dir(bpy.types) if 'OUTLINER' in name and 'MT' in name]
+    registered_outliner = False
+    for menu_name in outliner_menus:
+        try:
+            menu_type = getattr(bpy.types, menu_name)
+            if hasattr(menu_type, 'append'):
+                menu_type.append(outliner_menu_func)
+                registered_outliner = True
+                break
+        except Exception:
+            pass
 
 def unregister():
     bpy.types.NODE_MT_context_menu.remove(node_menu_func)
     bpy.types.MATERIAL_MT_context_menu.remove(material_menu_func)
     bpy.types.VIEW3D_MT_object_context_menu.remove(object_menu_func)
+    
+    # Try to unregister from all OUTLINER menus
+    outliner_menus = [name for name in dir(bpy.types) if 'OUTLINER' in name and 'MT' in name]
+    for menu_name in outliner_menus:
+        try:
+            menu_type = getattr(bpy.types, menu_name)
+            if hasattr(menu_type, 'remove'):
+                menu_type.remove(outliner_menu_func)
+        except (AttributeError, ValueError, TypeError):
+            pass
+    
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
 
